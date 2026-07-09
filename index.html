@@ -1490,6 +1490,16 @@
       gradeAnswer(elements.typedAnswer.value, "typed");
     });
 
+    elements.typedAnswer.addEventListener("beforeinput", (event) => {
+      if (event.data && /\s/.test(event.data)) {
+        event.preventDefault();
+      }
+    });
+
+    elements.typedAnswer.addEventListener("input", () => {
+      elements.typedAnswer.value = elements.typedAnswer.value.replace(/\s+/g, "");
+    });
+
     elements.nextButton.addEventListener("click", pickWord);
 
     buildBurst();
