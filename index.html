@@ -334,6 +334,20 @@
       word-break: break-word;
     }
 
+    .word-visual {
+      display: grid;
+      place-items: center;
+      width: clamp(86px, 17vw, 142px);
+      height: clamp(86px, 17vw, 142px);
+      margin: 0 auto 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(145deg, #ffffff, #f3f7fb);
+      box-shadow: 0 14px 32px rgba(23, 32, 42, 0.1);
+      font-size: clamp(3rem, 10vw, 5.7rem);
+      line-height: 1;
+    }
+
     .word-meta {
       min-height: 28px;
       margin: 0;
@@ -752,6 +766,7 @@
           <div class="burst" aria-hidden="true" id="burst"></div>
           <div class="trainer-content">
             <p class="prompt-label">Make the nominative plural</p>
+            <div id="wordVisual" class="word-visual" aria-hidden="true">🌊</div>
             <h2 id="toolTitle" class="word-card">rijeka</h2>
             <p id="wordMeta" class="word-meta">river · feminine noun</p>
 
@@ -802,7 +817,7 @@
           </section>
           <section class="info-block">
             <h2>Data</h2>
-            <p>Starter nouns are curated for Croatian practice and show English meanings with each prompt.</p>
+            <p>Starter nouns are curated for Croatian practice and show English meanings plus a visual cue with each prompt.</p>
             <div class="source-links">
               <a href="https://kaikki.org/dictionary/Serbo-Croatian/index.html" target="_blank" rel="noreferrer">Kaikki/Wiktionary source</a>
               <a href="https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition" target="_blank" rel="noreferrer">Web Speech API notes</a>
@@ -935,6 +950,123 @@
       { singular: "vrijeme", plural: "vremena", english: "time, weather", gender: "neuter" }
     ];
 
+    const VISUALS = {
+      auto: "🚗",
+      bicikl: "🚲",
+      bog: "⚡",
+      brat: "👨",
+      brod: "⛵",
+      bubreg: "🫘",
+      čovjek: "🧍",
+      dan: "☀️",
+      dječak: "👦",
+      doktor: "🧑‍⚕️",
+      dug: "🧾",
+      dvorac: "🏰",
+      gost: "🙋",
+      grijeh: "⚠️",
+      grad: "🏙️",
+      junak: "🦸",
+      jezik: "🗣️",
+      ključ: "🔑",
+      konj: "🐎",
+      korak: "👣",
+      kraj: "🏁",
+      kralj: "👑",
+      kruh: "🍞",
+      list: "🍃",
+      mač: "⚔️",
+      medvjed: "🐻",
+      miš: "🐭",
+      muzej: "🏛️",
+      nož: "🔪",
+      oblak: "☁️",
+      orah: "🌰",
+      otok: "🏝️",
+      otac: "👨",
+      pas: "🐕",
+      prijedlog: "💡",
+      prijatelj: "🤝",
+      prst: "☝️",
+      prozor: "🪟",
+      putnik: "🎒",
+      put: "🛣️",
+      razlog: "❓",
+      rog: "📯",
+      sat: "🕒",
+      sin: "👦",
+      stol: "🪑",
+      stric: "👨",
+      student: "🎓",
+      učitelj: "🧑‍🏫",
+      uspjeh: "🏆",
+      vojnik: "🪖",
+      vuk: "🐺",
+      vjetar: "💨",
+      vlak: "🚆",
+      zec: "🐰",
+      zid: "🧱",
+      zub: "🦷",
+      život: "🌱",
+      banka: "🏦",
+      bolest: "🤒",
+      boja: "🎨",
+      cesta: "🛣️",
+      djevojka: "👧",
+      godina: "📅",
+      knjiga: "📘",
+      kuća: "🏠",
+      kost: "🦴",
+      kći: "👧",
+      ljubav: "❤️",
+      majka: "👩",
+      mačka: "🐈",
+      misao: "💭",
+      more: "🌊",
+      noć: "🌙",
+      olovka: "✏️",
+      pjesma: "🎵",
+      planina: "⛰️",
+      rijeka: "🏞️",
+      riječ: "💬",
+      ruka: "✋",
+      sestra: "👩",
+      slika: "🖼️",
+      stvar: "📦",
+      stolica: "🪑",
+      škola: "🏫",
+      torba: "👜",
+      ulica: "🛤️",
+      voda: "💧",
+      žena: "👩",
+      dijete: "🧒",
+      drvo: "🌳",
+      ime: "🏷️",
+      jaje: "🥚",
+      jezero: "🏞️",
+      jutro: "🌅",
+      kazalište: "🎭",
+      kino: "🎬",
+      mjesto: "📍",
+      oko: "👁️",
+      pile: "🐥",
+      pismo: "✉️",
+      pitanje: "❓",
+      polje: "🌾",
+      pleme: "🏕️",
+      prase: "🐖",
+      rame: "💪",
+      selo: "🏘️",
+      sjeme: "🌰",
+      srce: "❤️",
+      sunce: "☀️",
+      tele: "🐄",
+      tijelo: "🧍",
+      uho: "👂",
+      vino: "🍷",
+      vrijeme: "⛅"
+    };
+
     const state = {
       current: null,
       previousIndex: -1,
@@ -956,6 +1088,7 @@
       toolView: document.querySelector("#toolView"),
       startToolButton: document.querySelector("#startToolButton"),
       backButton: document.querySelector("#backButton"),
+      wordVisual: document.querySelector("#wordVisual"),
       toolTitle: document.querySelector("#toolTitle"),
       wordMeta: document.querySelector("#wordMeta"),
       micButton: document.querySelector("#micButton"),
@@ -1024,6 +1157,7 @@
 
     function renderPrompt() {
       const word = state.current;
+      elements.wordVisual.textContent = VISUALS[word.singular] || "🖼️";
       elements.toolTitle.textContent = word.singular;
       elements.wordMeta.textContent = `${word.english} · ${word.gender} noun${word.notes ? ` · ${word.notes}` : ""}`;
       elements.typedAnswer.value = "";
