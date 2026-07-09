@@ -1069,9 +1069,9 @@
 
       const expected = normalizeAnswer(state.current.plural);
       const isCorrect = answer === expected;
-      const matchedAlternative = answers.some((item) => normalizeAnswer(item) === expected);
+      const matchedAnswer = answers.find((item) => normalizeAnswer(item) === expected);
 
-      showResult(isCorrect || matchedAlternative, rawAnswer, method);
+      showResult(isCorrect || Boolean(matchedAnswer), matchedAnswer || rawAnswer, method);
     }
 
     function collectSpeechAlternatives(rawAnswer) {
@@ -1170,7 +1170,7 @@
       recognition.lang = "hr-HR";
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.maxAlternatives = 3;
+      recognition.maxAlternatives = 5;
 
       recognition.addEventListener("start", () => {
         state.listening = true;
