@@ -716,7 +716,7 @@
           <div class="trainer-content">
             <p class="prompt-label">Make the nominative plural</p>
             <h2 id="toolTitle" class="word-card">rijeka</h2>
-            <p id="wordMeta" class="word-meta">feminine noun</p>
+            <p id="wordMeta" class="word-meta">river · feminine noun</p>
 
             <div class="listen-row">
               <button id="micButton" class="mic-button" type="button" aria-label="Start speech recognition">
@@ -916,7 +916,7 @@
     function renderPrompt() {
       const word = state.current;
       elements.toolTitle.textContent = word.singular;
-      elements.wordMeta.textContent = `${word.gender} noun${word.notes ? ` · ${word.notes}` : ""}`;
+      elements.wordMeta.textContent = `${word.english} · ${word.gender} noun${word.notes ? ` · ${word.notes}` : ""}`;
       elements.typedAnswer.value = "";
       elements.result.className = "result empty";
       elements.result.textContent = "Say or type the plural form.";
@@ -1045,8 +1045,6 @@
           <dd>${escapeHtml(spoken)}</dd>
           <dt>Plural</dt>
           <dd>${escapeHtml(word.plural)}</dd>
-          <dt>Meaning</dt>
-          <dd>${escapeHtml(word.english)}</dd>
         </dl>
       `;
       elements.nextButton.hidden = false;
