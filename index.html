@@ -830,6 +830,9 @@
       listening: false,
       advanceTimer: null,
       listenTimer: null,
+      restartTimer: null,
+      acceptingSpeech: false,
+      intentionallyStopped: false,
       toolActive: false
     };
 
@@ -901,6 +904,7 @@
       elements.result.className = "result empty";
       elements.result.textContent = "Say or type the plural form.";
       elements.nextButton.hidden = true;
+      state.acceptingSpeech = true;
       elements.typedAnswer.focus({ preventScroll: true });
       renderScore();
       scheduleListening();
@@ -926,9 +930,17 @@
       }
     }
 
+    function clearRestartTimer() {
+      if (state.restartTimer) {
+        window.clearTimeout(state.restartTimer);
+        state.restartTimer = null;
+      }
+    }
+
     function scheduleNextWord(isCorrect) {
       clearAdvanceTimer();
       clearListenTimer();
+      state.acceptingSpeech = false;
       state.advanceTimer = window.setTimeout(() => {
         state.advanceTimer = null;
         pickWord();
@@ -942,7 +954,7 @@
       }
       state.listenTimer = window.setTimeout(() => {
         state.listenTimer = null;
-        startListening(true);
+        ensureListening(true);
       }, 250);
     }
 
@@ -974,6 +986,7 @@
     }
 
     function showResult(isCorrect, rawAnswer, method) {
+      state.acceptingSpeech = false;
       const spoken = Array.isArray(rawAnswer) ? rawAnswer[0] : rawAnswer;
       const word = state.current;
 
@@ -1036,30 +1049,48 @@
 
       const recognition = new Recognition();
       recognition.lang = "hr-HR";
-      recognition.continuous = false;
+      recognition.continuous = true;
       recognition.interimResults = false;
       recognition.maxAlternatives = 3;
 
       recognition.addEventListener("start", () => {
+        clearRestartTimer();
         state.listening = true;
+        state.intentionallyStopped = false;
         elements.micButton.classList.add("listening");
         elements.speechStatus.textContent = "Listening for Croatian speech...";
-        showNeutral("Listening...");
+        if (state.acceptingSpeech) {
+          showNeutral("Listening...");
+        }
       });
 
       recognition.addEventListener("end", () => {
         state.listening = false;
         elements.micButton.classList.remove("listening");
-        elements.speechStatus.textContent = "Ready for another spoken answer. The next prompt will listen automatically.";
+        if (state.toolActive && !state.intentionallyStopped) {
+          elements.speechStatus.textContent = "Listening paused. Trying to resume automatically...";
+          scheduleRecognitionRestart();
+        } else {
+          elements.speechStatus.textContent = "Speech recognition is paused.";
+        }
       });
 
       recognition.addEventListener("result", (event) => {
-        const alternatives = Array.from(event.results[0], (result) => result.transcript);
+        if (!state.acceptingSpeech) {
+          return;
+        }
+        const latestResult = event.results[event.results.length - 1];
+        if (!latestResult.isFinal) {
+          return;
+        }
+        const alternatives = Array.from(latestResult, (result) => result.transcript);
         gradeAnswer(alternatives, "speech");
       });
 
       recognition.addEventListener("nomatch", () => {
-        showNeutral("I could not match the speech. Try again or type the answer.");
+        if (state.acceptingSpeech) {
+          showNeutral("I could not match the speech. Try again or type the answer.");
+        }
       });
 
       recognition.addEventListener("error", (event) => {
@@ -1070,28 +1101,48 @@
           network: "Speech recognition needs network access in this browser right now. Typed answers still work."
         };
         elements.speechStatus.textContent = messages[event.error] || `Speech recognition error: ${event.error}. Typed answers still work.`;
-        showNeutral(elements.speechStatus.textContent);
+        if (event.error === "not-allowed" || event.error === "service-not-allowed" || event.error === "audio-capture") {
+          state.intentionallyStopped = true;
+        }
+        if (state.acceptingSpeech) {
+          showNeutral(elements.speechStatus.textContent);
+        }
       });
 
       state.recognition = recognition;
       elements.speechStatus.textContent = "Speech recognition is available. Chrome may send audio to an online service.";
     }
 
-    function startListening(isAutomatic = false) {
+    function scheduleRecognitionRestart() {
+      clearRestartTimer();
+      if (!state.toolActive || !state.recognition || state.intentionallyStopped) {
+        return;
+      }
+      state.restartTimer = window.setTimeout(() => {
+        state.restartTimer = null;
+        ensureListening(true);
+      }, state.acceptingSpeech ? 500 : 1200);
+    }
+
+    function ensureListening(isAutomatic = false) {
       if (!state.recognition || state.listening) {
         return;
       }
       try {
+        state.intentionallyStopped = false;
         state.recognition.start();
       } catch (error) {
         elements.speechStatus.textContent = isAutomatic
-          ? "Automatic listening was blocked. Press the microphone button to answer."
+          ? "Automatic listening paused. Press the microphone button to resume."
           : "Speech recognition is already starting. Try again in a moment.";
       }
     }
 
     function stopListening() {
       clearListenTimer();
+      clearRestartTimer();
+      state.intentionallyStopped = true;
+      state.acceptingSpeech = false;
       if (state.recognition && state.listening) {
         state.recognition.abort();
       }
@@ -1102,6 +1153,7 @@
       if (!state.current) {
         pickWord();
       } else {
+        state.acceptingSpeech = elements.nextButton.hidden;
         scheduleListening();
       }
     });
@@ -1112,7 +1164,11 @@
       showView("landing");
     });
 
-    elements.micButton.addEventListener("click", startListening);
+    elements.micButton.addEventListener("click", () => {
+      state.intentionallyStopped = false;
+      state.acceptingSpeech = elements.nextButton.hidden;
+      ensureListening(false);
+    });
 
     elements.skipButton.addEventListener("click", () => {
       state.streak = 0;
