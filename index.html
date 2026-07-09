@@ -1089,7 +1089,8 @@
       const answers = collectSpeechAlternatives(rawAnswer);
       const answer = normalizeAnswer(answers[0] || "");
       if (!answers.some((item) => normalizeAnswer(item))) {
-        showNeutral("I did not catch an answer. Try again or type it.");
+        showNeutral("I did not catch an answer. Listening again...");
+        requestRecognitionRestart("I did not catch an answer. Listening again...");
         return;
       }
 
@@ -1239,7 +1240,7 @@
 
       recognition.addEventListener("nomatch", () => {
         if (state.acceptingSpeech) {
-          showNeutral("I could not match the speech. Try again or type the answer.");
+          requestRecognitionRestart("I could not match the speech. Listening again...");
         }
       });
 
@@ -1255,8 +1256,7 @@
           state.intentionallyStopped = true;
           setSpeechState("blocked", message);
         } else {
-          setSpeechState("resuming", message);
-          scheduleRecognitionRestart();
+          requestRecognitionRestart(message);
         }
         if (state.acceptingSpeech) {
           showNeutral(message);
@@ -1277,6 +1277,32 @@
         state.restartTimer = null;
         ensureListening(true);
       }, state.acceptingSpeech ? 350 : 900);
+    }
+
+    function requestRecognitionRestart(message) {
+      clearRestartTimer();
+      if (!state.toolActive || !state.recognition || !state.speechEnabled || state.intentionallyStopped) {
+        return;
+      }
+      setSpeechState("resuming", message || "Listening paused. Trying to resume automatically...");
+      if (state.acceptingSpeech && message) {
+        showNeutral(message);
+      }
+      if (state.listening) {
+        try {
+          state.recognition.abort();
+          state.restartTimer = window.setTimeout(() => {
+            state.restartTimer = null;
+            state.listening = false;
+            ensureListening(true);
+          }, 900);
+        } catch (error) {
+          state.listening = false;
+          scheduleRecognitionRestart();
+        }
+        return;
+      }
+      scheduleRecognitionRestart();
     }
 
     function ensureListening(isAutomatic = false) {
@@ -1352,6 +1378,10 @@
     elements.micButton.addEventListener("click", () => {
       state.intentionallyStopped = false;
       state.acceptingSpeech = elements.nextButton.hidden;
+      if (state.speechEnabled && state.recognition && state.listening) {
+        requestRecognitionRestart("Restarting speech recognition...");
+        return;
+      }
       ensureListening(false);
     });
 
