@@ -359,16 +359,18 @@
       background: var(--red);
       color: white;
       box-shadow: 0 16px 34px rgba(211, 63, 73, 0.34);
+      touch-action: none;
+      user-select: none;
     }
 
     .mic-button.listening {
       animation: micPulse 1.05s infinite;
     }
 
-    .mic-button.resuming {
+    .mic-button.processing {
       background: var(--gold);
       color: #3b2a0a;
-      animation: resumePulse 1.2s infinite;
+      animation: processingPulse 1.2s infinite;
       box-shadow: 0 16px 34px rgba(240, 184, 77, 0.34);
     }
 
@@ -598,7 +600,7 @@
       100% { box-shadow: 0 0 0 0 rgba(211, 63, 73, 0), 0 16px 34px rgba(211, 63, 73, 0.34); }
     }
 
-    @keyframes resumePulse {
+    @keyframes processingPulse {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.06); }
     }
@@ -754,7 +756,7 @@
             <p id="wordMeta" class="word-meta">river · feminine noun</p>
 
             <div class="listen-row">
-              <button id="micButton" class="mic-button" type="button" aria-label="Start speech recognition">
+              <button id="micButton" class="mic-button" type="button" aria-label="Hold to speak">
                 <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   <path d="M19 11a7 7 0 0 1-14 0M12 18v3M8 21h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -782,7 +784,7 @@
                 <input id="speechToggle" type="checkbox" checked>
                 <span>
                   <strong>Speech recognition</strong>
-                  <span>Listen automatically when available.</span>
+                  <span>Hold space or press the mic to answer.</span>
                 </span>
               </label>
               <label class="toggle-row">
@@ -942,10 +944,8 @@
       recognition: null,
       listening: false,
       advanceTimer: null,
-      listenTimer: null,
-      restartTimer: null,
       acceptingSpeech: false,
-      intentionallyStopped: false,
+      pushToTalkActive: false,
       speechEnabled: true,
       ignoreDiacritics: true,
       toolActive: false
@@ -1028,12 +1028,11 @@
       elements.wordMeta.textContent = `${word.english} · ${word.gender} noun${word.notes ? ` · ${word.notes}` : ""}`;
       elements.typedAnswer.value = "";
       elements.result.className = "result empty";
-      elements.result.textContent = state.speechEnabled ? "Say or type the plural form." : "Type the plural form.";
+      elements.result.textContent = state.speechEnabled ? "Hold space or the mic to answer, or type the plural form." : "Type the plural form.";
       elements.nextButton.hidden = true;
       state.acceptingSpeech = true;
       elements.typedAnswer.focus({ preventScroll: true });
       renderScore();
-      scheduleListening();
     }
 
     function renderScore() {
@@ -1049,23 +1048,8 @@
       }
     }
 
-    function clearListenTimer() {
-      if (state.listenTimer) {
-        window.clearTimeout(state.listenTimer);
-        state.listenTimer = null;
-      }
-    }
-
-    function clearRestartTimer() {
-      if (state.restartTimer) {
-        window.clearTimeout(state.restartTimer);
-        state.restartTimer = null;
-      }
-    }
-
     function scheduleNextWord(isCorrect) {
       clearAdvanceTimer();
-      clearListenTimer();
       state.acceptingSpeech = false;
       state.advanceTimer = window.setTimeout(() => {
         state.advanceTimer = null;
@@ -1073,24 +1057,13 @@
       }, isCorrect ? 2000 : 4000);
     }
 
-    function scheduleListening() {
-      clearListenTimer();
-      if (!state.toolActive || !state.recognition || !state.speechEnabled) {
-        return;
-      }
-      state.listenTimer = window.setTimeout(() => {
-        state.listenTimer = null;
-        setSpeechState("resuming");
-        ensureListening(true);
-      }, 250);
-    }
-
     function gradeAnswer(rawAnswer, method) {
       const answers = collectSpeechAlternatives(rawAnswer);
       const answer = normalizeAnswer(answers[0] || "");
       if (!answers.some((item) => normalizeAnswer(item))) {
-        showNeutral("I did not catch an answer. Listening again...");
-        requestRecognitionRestart("I did not catch an answer. Listening again...");
+        showNeutral(state.speechEnabled
+          ? "I did not catch an answer. Hold space or the mic and try again."
+          : "Type the plural form.");
         return;
       }
 
@@ -1115,13 +1088,13 @@
 
     function setSpeechState(status, message) {
       elements.micButton.classList.toggle("listening", status === "listening");
-      elements.micButton.classList.toggle("resuming", status === "resuming");
+      elements.micButton.classList.toggle("processing", status === "processing");
       elements.micButton.classList.toggle("paused", status === "paused" || status === "blocked" || status === "unavailable");
 
       const labels = {
         idle: "Start speech recognition",
         listening: "Listening",
-        resuming: "Resuming speech recognition",
+        processing: "Checking speech",
         paused: "Resume speech recognition",
         blocked: "Speech recognition needs manual resume",
         unavailable: "Speech recognition unavailable"
@@ -1195,15 +1168,13 @@
 
       const recognition = new Recognition();
       recognition.lang = "hr-HR";
-      recognition.continuous = true;
+      recognition.continuous = false;
       recognition.interimResults = false;
       recognition.maxAlternatives = 3;
 
       recognition.addEventListener("start", () => {
-        clearRestartTimer();
         state.listening = true;
-        state.intentionallyStopped = false;
-        setSpeechState("listening", "Listening for Croatian speech...");
+        setSpeechState("listening", "Listening. Release space or the mic when you are done.");
         if (state.acceptingSpeech) {
           showNeutral("Listening...");
         }
@@ -1211,18 +1182,14 @@
 
       recognition.addEventListener("end", () => {
         state.listening = false;
+        state.pushToTalkActive = false;
         if (!state.speechEnabled) {
           setSpeechState("unavailable", "Speech recognition is off. Typed answers still work.");
           return;
         }
-        if (state.toolActive && !state.intentionallyStopped) {
-          setSpeechState("resuming", "Listening paused. Trying to resume automatically...");
-          if (state.acceptingSpeech) {
-            showNeutral("Listening paused. Resuming...");
-          }
-          scheduleRecognitionRestart();
-        } else {
-          setSpeechState("paused", "Speech recognition is paused.");
+        setSpeechState("idle", "Hold space or hold the microphone to answer.");
+        if (state.acceptingSpeech && elements.result.textContent === "Listening...") {
+          showNeutral("Hold space or the mic to try again, or type the answer.");
         }
       });
 
@@ -1240,7 +1207,7 @@
 
       recognition.addEventListener("nomatch", () => {
         if (state.acceptingSpeech) {
-          requestRecognitionRestart("I could not match the speech. Listening again...");
+          showNeutral("I could not match the speech. Hold space or the mic and try again.");
         }
       });
 
@@ -1253,10 +1220,9 @@
         };
         const message = messages[event.error] || `Speech recognition error: ${event.error}. Typed answers still work.`;
         if (event.error === "not-allowed" || event.error === "service-not-allowed" || event.error === "audio-capture") {
-          state.intentionallyStopped = true;
           setSpeechState("blocked", message);
         } else {
-          requestRecognitionRestart(message);
+          setSpeechState("idle", "Hold space or hold the microphone to answer.");
         }
         if (state.acceptingSpeech) {
           showNeutral(message);
@@ -1264,58 +1230,21 @@
       });
 
       state.recognition = recognition;
-      setSpeechState("idle", "Speech recognition is available. Chrome may send audio to an online service.");
+      setSpeechState("idle", "Hold space or hold the microphone to answer.");
     }
 
-    function scheduleRecognitionRestart() {
-      clearRestartTimer();
-      if (!state.toolActive || !state.recognition || !state.speechEnabled || state.intentionallyStopped) {
-        return;
+    function startPushToTalk(event) {
+      if (event) {
+        event.preventDefault();
       }
-      setSpeechState("resuming", "Listening paused. Trying to resume automatically...");
-      state.restartTimer = window.setTimeout(() => {
-        state.restartTimer = null;
-        ensureListening(true);
-      }, state.acceptingSpeech ? 350 : 900);
-    }
-
-    function requestRecognitionRestart(message) {
-      clearRestartTimer();
-      if (!state.toolActive || !state.recognition || !state.speechEnabled || state.intentionallyStopped) {
-        return;
-      }
-      setSpeechState("resuming", message || "Listening paused. Trying to resume automatically...");
-      if (state.acceptingSpeech && message) {
-        showNeutral(message);
-      }
-      if (state.listening) {
-        try {
-          state.recognition.abort();
-          state.restartTimer = window.setTimeout(() => {
-            state.restartTimer = null;
-            state.listening = false;
-            ensureListening(true);
-          }, 900);
-        } catch (error) {
-          state.listening = false;
-          scheduleRecognitionRestart();
-        }
-        return;
-      }
-      scheduleRecognitionRestart();
-    }
-
-    function ensureListening(isAutomatic = false) {
-      if (!state.speechEnabled || !state.recognition || state.listening) {
+      if (!state.toolActive || !state.acceptingSpeech || !state.speechEnabled || !state.recognition || state.listening) {
         return;
       }
       try {
-        state.intentionallyStopped = false;
+        state.pushToTalkActive = true;
         state.recognition.start();
       } catch (error) {
-        const message = isAutomatic
-          ? "Automatic listening paused. Press the microphone button to resume."
-          : "Speech recognition is already starting. Try again in a moment.";
+        const message = "Speech recognition is already starting. Try again in a moment.";
         setSpeechState("blocked", message);
         if (state.acceptingSpeech) {
           showNeutral(message);
@@ -1323,15 +1252,35 @@
       }
     }
 
-    function stopListening() {
-      clearListenTimer();
-      clearRestartTimer();
-      state.intentionallyStopped = true;
-      state.acceptingSpeech = false;
-      if (state.recognition && state.listening) {
-        state.recognition.abort();
+    function stopPushToTalk(event) {
+      if (event) {
+        event.preventDefault();
       }
-      setSpeechState("paused", "Speech recognition is paused.");
+      if (!state.pushToTalkActive || !state.recognition) {
+        return;
+      }
+      state.pushToTalkActive = false;
+      if (state.listening) {
+        setSpeechState("processing", "Checking...");
+        try {
+          state.recognition.stop();
+        } catch (error) {
+          state.listening = false;
+          setSpeechState("idle", "Hold space or hold the microphone to answer.");
+        }
+      }
+    }
+
+    function abortSpeech() {
+      state.pushToTalkActive = false;
+      if (state.recognition && state.listening) {
+        try {
+          state.recognition.abort();
+        } catch (error) {
+          state.listening = false;
+        }
+      }
+      setSpeechState("idle", "Hold space or hold the microphone to answer.");
     }
 
     function setSpeechEnabled(enabled) {
@@ -1340,17 +1289,15 @@
       elements.micButton.disabled = !enabled || !state.recognition;
 
       if (enabled) {
-        state.intentionallyStopped = false;
         state.acceptingSpeech = state.toolActive && state.current && elements.nextButton.hidden;
         setSpeechState("idle", state.recognition
-          ? "Speech recognition is available. Chrome may send audio to an online service."
+          ? "Hold space or hold the microphone to answer."
           : "Speech recognition is not available in this browser. Typed answers still work.");
         if (state.toolActive && state.current && elements.nextButton.hidden) {
-          showNeutral("Say or type the plural form.");
-          scheduleListening();
+          showNeutral("Hold space or the mic to answer, or type the plural form.");
         }
       } else {
-        stopListening();
+        abortSpeech();
         elements.micButton.disabled = true;
         setSpeechState("unavailable", "Speech recognition is off. Typed answers still work.");
         if (state.toolActive && state.current && elements.nextButton.hidden) {
@@ -1365,25 +1312,19 @@
         pickWord();
       } else {
         state.acceptingSpeech = elements.nextButton.hidden;
-        scheduleListening();
       }
     });
 
     elements.backButton.addEventListener("click", () => {
-      stopListening();
+      abortSpeech();
       clearAdvanceTimer();
       showView("landing");
     });
 
-    elements.micButton.addEventListener("click", () => {
-      state.intentionallyStopped = false;
-      state.acceptingSpeech = elements.nextButton.hidden;
-      if (state.speechEnabled && state.recognition && state.listening) {
-        requestRecognitionRestart("Restarting speech recognition...");
-        return;
-      }
-      ensureListening(false);
-    });
+    elements.micButton.addEventListener("pointerdown", startPushToTalk);
+    elements.micButton.addEventListener("pointerup", stopPushToTalk);
+    elements.micButton.addEventListener("pointercancel", stopPushToTalk);
+    elements.micButton.addEventListener("pointerleave", stopPushToTalk);
 
     elements.speechToggle.addEventListener("change", () => {
       setSpeechEnabled(elements.speechToggle.checked);
@@ -1391,6 +1332,18 @@
 
     elements.diacriticsToggle.addEventListener("change", () => {
       state.ignoreDiacritics = elements.diacriticsToggle.checked;
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.code === "Space" && !event.repeat && state.speechEnabled) {
+        startPushToTalk(event);
+      }
+    });
+
+    window.addEventListener("keyup", (event) => {
+      if (event.code === "Space" && (state.speechEnabled || state.pushToTalkActive)) {
+        stopPushToTalk(event);
+      }
     });
 
     elements.skipButton.addEventListener("click", () => {
