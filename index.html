@@ -370,22 +370,25 @@
       width: 76px;
       height: 76px;
       border-radius: 50%;
-      background: var(--red);
-      color: white;
-      box-shadow: 0 16px 34px rgba(211, 63, 73, 0.34);
+      background: var(--gold);
+      color: #3b2a0a;
+      box-shadow: 0 16px 34px rgba(240, 184, 77, 0.34);
       touch-action: none;
       user-select: none;
     }
 
     .mic-button.listening {
+      background: var(--red);
+      color: white;
       animation: micPulse 1.05s infinite;
+      box-shadow: 0 16px 34px rgba(211, 63, 73, 0.34);
     }
 
     .mic-button.processing {
-      background: var(--gold);
-      color: #3b2a0a;
+      background: var(--blue);
+      color: white;
       animation: processingPulse 1.2s infinite;
-      box-shadow: 0 16px 34px rgba(240, 184, 77, 0.34);
+      box-shadow: 0 16px 34px rgba(22, 87, 168, 0.3);
     }
 
     .mic-button.paused {
