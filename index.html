@@ -1,0 +1,1133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Croatian Tools</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17202a;
+      --muted: #667085;
+      --line: #d7dee8;
+      --paper: #fffdf8;
+      --panel: #ffffff;
+      --blue: #1657a8;
+      --blue-dark: #0f3f7e;
+      --red: #d33f49;
+      --green: #138a5b;
+      --gold: #f0b84d;
+      --shadow: 0 18px 45px rgba(23, 32, 42, 0.14);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(22, 87, 168, 0.08), rgba(211, 63, 73, 0.06)),
+        var(--paper);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .app {
+      min-height: 100vh;
+    }
+
+    .view {
+      display: none;
+      min-height: 100vh;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .landing {
+      position: relative;
+      overflow: hidden;
+      min-height: 100vh;
+      padding: 28px;
+      background:
+        linear-gradient(rgba(12, 35, 64, 0.35), rgba(12, 35, 64, 0.45)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1400 900'%3E%3Crect width='1400' height='900' fill='%23f7efe0'/%3E%3Cpath d='M0 690c180-85 316-57 438-124 124-68 210-193 390-173 173 19 258 159 572 49v458H0z' fill='%231657a8'/%3E%3Cpath d='M0 740c154-78 322-15 480-69 152-52 228-153 382-120 149 32 258 145 538 49v300H0z' fill='%23d33f49'/%3E%3Cpath d='M0 802c190-58 306-22 466-43 200-26 247-97 402-63 172 37 283 92 532 22v182H0z' fill='%23ffffff'/%3E%3Ccircle cx='254' cy='194' r='72' fill='%23f0b84d' opacity='.86'/%3E%3Cpath d='M913 221l38-68 38 68 76 14-52 57 10 77-72-32-72 32 10-77-52-57z' fill='%23ffffff' opacity='.62'/%3E%3Cpath d='M180 447c72-120 150-180 232-180s160 60 232 180' fill='none' stroke='%23ffffff' stroke-width='22' stroke-linecap='round' opacity='.55'/%3E%3C/svg%3E");
+      background-size: cover;
+      background-position: center;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      max-width: 1120px;
+      margin: 0 auto;
+      color: white;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--blue);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.16);
+    }
+
+    .landing-inner {
+      display: grid;
+      align-content: center;
+      min-height: calc(100vh - 94px);
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 42px 0 110px;
+      color: white;
+    }
+
+    .hero-text {
+      max-width: 690px;
+      text-shadow: 0 3px 26px rgba(0, 0, 0, 0.38);
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #ffe0a3;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(3.1rem, 7vw, 6.8rem);
+      line-height: 0.92;
+      letter-spacing: 0;
+    }
+
+    .hero-copy {
+      max-width: 560px;
+      margin: 24px 0 0;
+      font-size: clamp(1.08rem, 2vw, 1.35rem);
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .primary-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 50px;
+      margin-top: 32px;
+      padding: 0 22px;
+      border-radius: 8px;
+      background: white;
+      color: var(--blue-dark);
+      font-weight: 800;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22);
+    }
+
+    .primary-action:hover {
+      transform: translateY(-1px);
+    }
+
+    .landing-preview {
+      position: absolute;
+      right: clamp(20px, 7vw, 96px);
+      bottom: 22px;
+      width: min(520px, calc(100vw - 44px));
+      padding: 16px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--ink);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .preview-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 54px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .preview-row:last-child {
+      border-bottom: 0;
+    }
+
+    .preview-label {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .preview-word {
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: var(--blue-dark);
+    }
+
+    .tool-shell {
+      min-height: 100vh;
+      padding: 24px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 253, 248, 0.92)),
+        repeating-linear-gradient(90deg, rgba(22, 87, 168, 0.08) 0 1px, transparent 1px 52px);
+    }
+
+    .tool-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      max-width: 1080px;
+      margin: 0 auto 18px;
+    }
+
+    .ghost-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.76);
+      color: var(--ink);
+      font-weight: 800;
+    }
+
+    .score-strip {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .score-pill {
+      min-width: 92px;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      text-align: center;
+    }
+
+    .score-pill span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.73rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .score-pill strong {
+      display: block;
+      margin-top: 2px;
+      color: var(--blue-dark);
+      font-size: 1.15rem;
+    }
+
+    .practice-area {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 18px;
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    .trainer {
+      position: relative;
+      overflow: hidden;
+      min-height: 640px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .trainer-content {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      align-content: center;
+      min-height: 640px;
+      padding: clamp(22px, 5vw, 58px);
+      text-align: center;
+    }
+
+    .trainer::before,
+    .trainer::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      opacity: 0.12;
+      transform: rotate(-18deg);
+    }
+
+    .trainer::before {
+      width: 520px;
+      height: 72px;
+      right: -170px;
+      top: 82px;
+      background: var(--blue);
+    }
+
+    .trainer::after {
+      width: 460px;
+      height: 72px;
+      left: -160px;
+      bottom: 92px;
+      background: var(--red);
+    }
+
+    .prompt-label {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .word-card {
+      margin: 16px auto 8px;
+      font-size: clamp(3rem, 10vw, 7.5rem);
+      line-height: 0.95;
+      font-weight: 950;
+      letter-spacing: 0;
+      color: var(--blue-dark);
+      word-break: break-word;
+    }
+
+    .word-meta {
+      min-height: 28px;
+      margin: 0;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .listen-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 32px;
+    }
+
+    .mic-button {
+      display: inline-grid;
+      place-items: center;
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: var(--red);
+      color: white;
+      box-shadow: 0 16px 34px rgba(211, 63, 73, 0.34);
+    }
+
+    .mic-button.listening {
+      animation: micPulse 1.05s infinite;
+    }
+
+    .typed-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      width: min(560px, 100%);
+      margin: 22px auto 0;
+    }
+
+    .typed-form input {
+      min-height: 48px;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 14px;
+      background: #fbfcff;
+      color: var(--ink);
+      outline: none;
+    }
+
+    .typed-form input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(22, 87, 168, 0.14);
+    }
+
+    .check-button,
+    .next-button {
+      min-height: 48px;
+      padding: 0 18px;
+      border-radius: 8px;
+      background: var(--blue);
+      color: white;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .result {
+      width: min(620px, 100%);
+      min-height: 124px;
+      margin: 28px auto 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcff;
+      text-align: left;
+    }
+
+    .result.empty {
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .result.correct {
+      border-color: rgba(19, 138, 91, 0.34);
+      background: #f1fbf6;
+    }
+
+    .result.incorrect {
+      border-color: rgba(211, 63, 73, 0.34);
+      background: #fff6f5;
+    }
+
+    .result-title {
+      margin: 0 0 10px;
+      font-size: 1.1rem;
+      font-weight: 900;
+    }
+
+    .result.correct .result-title {
+      color: var(--green);
+    }
+
+    .result.incorrect .result-title {
+      color: var(--red);
+    }
+
+    .result dl {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 6px 12px;
+      margin: 0;
+    }
+
+    .result dt {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .result dd {
+      margin: 0;
+      font-weight: 750;
+    }
+
+    .next-button {
+      margin-top: 18px;
+      background: var(--green);
+    }
+
+    .side-panel {
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .info-block {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.84);
+      padding: 16px;
+    }
+
+    .info-block h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+    }
+
+    .info-block p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.94rem;
+    }
+
+    .source-links {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .source-links a {
+      color: var(--blue-dark);
+      font-weight: 750;
+      text-decoration: none;
+    }
+
+    .source-links a:hover {
+      text-decoration: underline;
+    }
+
+    .burst {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .burst span {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      opacity: 0;
+      transform: translate(-50%, -50%) rotate(var(--angle)) translateY(0);
+      background: var(--piece);
+    }
+
+    .trainer.celebrate .burst span {
+      animation: burst 800ms ease-out forwards;
+    }
+
+    .trainer.shake {
+      animation: shake 420ms ease;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @keyframes micPulse {
+      0% { box-shadow: 0 0 0 0 rgba(211, 63, 73, 0.48), 0 16px 34px rgba(211, 63, 73, 0.34); }
+      70% { box-shadow: 0 0 0 18px rgba(211, 63, 73, 0), 0 16px 34px rgba(211, 63, 73, 0.34); }
+      100% { box-shadow: 0 0 0 0 rgba(211, 63, 73, 0), 0 16px 34px rgba(211, 63, 73, 0.34); }
+    }
+
+    @keyframes burst {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) rotate(var(--angle)) translateY(0) scale(0.8);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-260px) scale(1.1);
+      }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(4px); }
+    }
+
+    @media (max-width: 860px) {
+      .landing {
+        padding: 20px;
+      }
+
+      .landing-inner {
+        min-height: calc(100vh - 82px);
+        padding-bottom: 190px;
+      }
+
+      .landing-preview {
+        left: 20px;
+        right: 20px;
+        bottom: 18px;
+        width: auto;
+      }
+
+      .practice-area {
+        grid-template-columns: 1fr;
+      }
+
+      .trainer,
+      .trainer-content {
+        min-height: 600px;
+      }
+
+      .side-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 580px) {
+      .tool-shell {
+        padding: 16px;
+      }
+
+      .tool-header {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .score-strip {
+        justify-content: stretch;
+      }
+
+      .score-pill {
+        flex: 1 1 90px;
+      }
+
+      .typed-form {
+        grid-template-columns: 1fr;
+      }
+
+      .trainer,
+      .trainer-content {
+        min-height: 560px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section id="landingView" class="view landing active" aria-labelledby="landingTitle">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M6 4h9a3 3 0 0 1 0 6H6V4Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M6 10h10a3 3 0 0 1 0 6H6v-6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M6 4v16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Croatian Tools
+        </div>
+      </header>
+
+      <div class="landing-inner">
+        <div class="hero-text">
+          <p class="eyebrow">Nominative plural practice</p>
+          <h1 id="landingTitle">Croatian Tools</h1>
+          <p class="hero-copy">A tiny local practice page for drilling Croatian noun plurals with your voice, your keyboard, and quick feedback.</p>
+          <button id="startToolButton" class="primary-action" type="button">
+            Start practice
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <aside class="landing-preview" aria-label="Practice preview">
+        <div class="preview-row">
+          <div>
+            <div class="preview-label">Singular</div>
+            <div class="preview-word">grad</div>
+          </div>
+          <div class="preview-label">city</div>
+        </div>
+        <div class="preview-row">
+          <div>
+            <div class="preview-label">Say</div>
+            <div class="preview-word">gradovi</div>
+          </div>
+          <div class="preview-label">plural</div>
+        </div>
+      </aside>
+    </section>
+
+    <section id="toolView" class="view tool-shell" aria-labelledby="toolTitle">
+      <header class="tool-header">
+        <button id="backButton" class="ghost-button" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M19 12H5M11 18l-6-6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Home
+        </button>
+        <div class="score-strip" aria-label="Practice score">
+          <div class="score-pill"><span>Correct</span><strong id="correctCount">0</strong></div>
+          <div class="score-pill"><span>Streak</span><strong id="streakCount">0</strong></div>
+          <div class="score-pill"><span>Seen</span><strong id="seenCount">0</strong></div>
+        </div>
+      </header>
+
+      <div class="practice-area">
+        <article id="trainer" class="trainer">
+          <div class="burst" aria-hidden="true" id="burst"></div>
+          <div class="trainer-content">
+            <p class="prompt-label">Make the nominative plural</p>
+            <h2 id="toolTitle" class="word-card">rijeka</h2>
+            <p id="wordMeta" class="word-meta">feminine noun</p>
+
+            <div class="listen-row">
+              <button id="micButton" class="mic-button" type="button" aria-label="Start speech recognition">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M19 11a7 7 0 0 1-14 0M12 18v3M8 21h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <button id="skipButton" class="ghost-button" type="button">Skip</button>
+            </div>
+
+            <form id="typedForm" class="typed-form" autocomplete="off">
+              <label class="sr-only" for="typedAnswer">Typed plural answer</label>
+              <input id="typedAnswer" type="text" inputmode="text" placeholder="Type the plural instead">
+              <button class="check-button" type="submit">Check</button>
+            </form>
+
+            <div id="result" class="result empty" aria-live="polite">Say or type the plural form.</div>
+            <button id="nextButton" class="next-button" type="button" hidden>Next word</button>
+          </div>
+        </article>
+
+        <aside class="side-panel">
+          <section class="info-block">
+            <h2>Speech</h2>
+            <p id="speechStatus">Chrome speech recognition will be detected when practice starts.</p>
+          </section>
+          <section class="info-block">
+            <h2>Data</h2>
+            <p>Starter nouns are curated for Croatian practice and include English meanings after each answer.</p>
+            <div class="source-links">
+              <a href="https://kaikki.org/dictionary/Serbo-Croatian/index.html" target="_blank" rel="noreferrer">Kaikki/Wiktionary source</a>
+              <a href="https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition" target="_blank" rel="noreferrer">Web Speech API notes</a>
+            </div>
+          </section>
+          <section class="info-block">
+            <h2>Local use</h2>
+            <p>This page is static and can be opened from a local file. Chrome may still use an online service to transcribe speech.</p>
+          </section>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const WORDS = [
+      { singular: "auto", plural: "auti", english: "car", gender: "masculine" },
+      { singular: "bicikl", plural: "bicikli", english: "bicycle", gender: "masculine" },
+      { singular: "brod", plural: "brodovi", english: "ship, boat", gender: "masculine" },
+      { singular: "dan", plural: "dani", english: "day", gender: "masculine" },
+      { singular: "dječak", plural: "dječaci", english: "boy", gender: "masculine" },
+      { singular: "doktor", plural: "doktori", english: "doctor", gender: "masculine" },
+      { singular: "grad", plural: "gradovi", english: "city, town", gender: "masculine" },
+      { singular: "ključ", plural: "ključevi", english: "key", gender: "masculine" },
+      { singular: "konj", plural: "konji", english: "horse", gender: "masculine" },
+      { singular: "kraj", plural: "krajevi", english: "end, region", gender: "masculine" },
+      { singular: "kruh", plural: "kruhovi", english: "bread, loaf", gender: "masculine" },
+      { singular: "list", plural: "listovi", english: "leaf, sheet", gender: "masculine" },
+      { singular: "medvjed", plural: "medvjedi", english: "bear", gender: "masculine" },
+      { singular: "muzej", plural: "muzeji", english: "museum", gender: "masculine" },
+      { singular: "nož", plural: "noževi", english: "knife", gender: "masculine" },
+      { singular: "otok", plural: "otoci", english: "island", gender: "masculine" },
+      { singular: "pas", plural: "psi", english: "dog", gender: "masculine" },
+      { singular: "prijatelj", plural: "prijatelji", english: "friend", gender: "masculine" },
+      { singular: "prozor", plural: "prozori", english: "window", gender: "masculine" },
+      { singular: "sat", plural: "satovi", english: "hour, clock", gender: "masculine" },
+      { singular: "sin", plural: "sinovi", english: "son", gender: "masculine" },
+      { singular: "stol", plural: "stolovi", english: "table", gender: "masculine" },
+      { singular: "student", plural: "studenti", english: "student", gender: "masculine" },
+      { singular: "učitelj", plural: "učitelji", english: "teacher", gender: "masculine" },
+      { singular: "vjetar", plural: "vjetrovi", english: "wind", gender: "masculine" },
+      { singular: "vlak", plural: "vlakovi", english: "train", gender: "masculine" },
+      { singular: "zid", plural: "zidovi", english: "wall", gender: "masculine" },
+      { singular: "život", plural: "životi", english: "life", gender: "masculine" },
+      { singular: "banka", plural: "banke", english: "bank", gender: "feminine" },
+      { singular: "boja", plural: "boje", english: "color", gender: "feminine" },
+      { singular: "cesta", plural: "ceste", english: "road", gender: "feminine" },
+      { singular: "djevojka", plural: "djevojke", english: "girl", gender: "feminine" },
+      { singular: "godina", plural: "godine", english: "year", gender: "feminine" },
+      { singular: "knjiga", plural: "knjige", english: "book", gender: "feminine" },
+      { singular: "kuća", plural: "kuće", english: "house", gender: "feminine" },
+      { singular: "majka", plural: "majke", english: "mother", gender: "feminine" },
+      { singular: "mačka", plural: "mačke", english: "cat", gender: "feminine" },
+      { singular: "more", plural: "mora", english: "sea", gender: "neuter" },
+      { singular: "noć", plural: "noći", english: "night", gender: "feminine" },
+      { singular: "olovka", plural: "olovke", english: "pencil", gender: "feminine" },
+      { singular: "pjesma", plural: "pjesme", english: "song, poem", gender: "feminine" },
+      { singular: "planina", plural: "planine", english: "mountain", gender: "feminine" },
+      { singular: "rijeka", plural: "rijeke", english: "river", gender: "feminine" },
+      { singular: "ruka", plural: "ruke", english: "hand, arm", gender: "feminine" },
+      { singular: "sestra", plural: "sestre", english: "sister", gender: "feminine" },
+      { singular: "slika", plural: "slike", english: "picture", gender: "feminine" },
+      { singular: "stolica", plural: "stolice", english: "chair", gender: "feminine" },
+      { singular: "škola", plural: "škole", english: "school", gender: "feminine" },
+      { singular: "torba", plural: "torbe", english: "bag", gender: "feminine" },
+      { singular: "ulica", plural: "ulice", english: "street", gender: "feminine" },
+      { singular: "voda", plural: "vode", english: "water", gender: "feminine" },
+      { singular: "žena", plural: "žene", english: "woman", gender: "feminine" },
+      { singular: "dijete", plural: "djeca", english: "child", gender: "neuter", notes: "irregular collective plural" },
+      { singular: "drvo", plural: "drveća", english: "tree", gender: "neuter" },
+      { singular: "ime", plural: "imena", english: "name", gender: "neuter" },
+      { singular: "jaje", plural: "jaja", english: "egg", gender: "neuter" },
+      { singular: "jezero", plural: "jezera", english: "lake", gender: "neuter" },
+      { singular: "jutro", plural: "jutra", english: "morning", gender: "neuter" },
+      { singular: "kazalište", plural: "kazališta", english: "theater", gender: "neuter" },
+      { singular: "kino", plural: "kina", english: "cinema", gender: "neuter" },
+      { singular: "mjesto", plural: "mjesta", english: "place", gender: "neuter" },
+      { singular: "oko", plural: "oči", english: "eye", gender: "neuter", notes: "body-part plural" },
+      { singular: "pismo", plural: "pisma", english: "letter", gender: "neuter" },
+      { singular: "pitanje", plural: "pitanja", english: "question", gender: "neuter" },
+      { singular: "polje", plural: "polja", english: "field", gender: "neuter" },
+      { singular: "selo", plural: "sela", english: "village", gender: "neuter" },
+      { singular: "srce", plural: "srca", english: "heart", gender: "neuter" },
+      { singular: "sunce", plural: "sunca", english: "sun", gender: "neuter" },
+      { singular: "tijelo", plural: "tijela", english: "body", gender: "neuter" },
+      { singular: "uho", plural: "uši", english: "ear", gender: "neuter", notes: "body-part plural" },
+      { singular: "vino", plural: "vina", english: "wine", gender: "neuter" },
+      { singular: "vrijeme", plural: "vremena", english: "time, weather", gender: "neuter" }
+    ];
+
+    const state = {
+      current: null,
+      previousIndex: -1,
+      correct: 0,
+      streak: 0,
+      seen: 0,
+      recognition: null,
+      listening: false,
+      advanceTimer: null,
+      listenTimer: null,
+      toolActive: false
+    };
+
+    const elements = {
+      landingView: document.querySelector("#landingView"),
+      toolView: document.querySelector("#toolView"),
+      startToolButton: document.querySelector("#startToolButton"),
+      backButton: document.querySelector("#backButton"),
+      toolTitle: document.querySelector("#toolTitle"),
+      wordMeta: document.querySelector("#wordMeta"),
+      micButton: document.querySelector("#micButton"),
+      skipButton: document.querySelector("#skipButton"),
+      typedForm: document.querySelector("#typedForm"),
+      typedAnswer: document.querySelector("#typedAnswer"),
+      result: document.querySelector("#result"),
+      nextButton: document.querySelector("#nextButton"),
+      speechStatus: document.querySelector("#speechStatus"),
+      correctCount: document.querySelector("#correctCount"),
+      streakCount: document.querySelector("#streakCount"),
+      seenCount: document.querySelector("#seenCount"),
+      trainer: document.querySelector("#trainer"),
+      burst: document.querySelector("#burst")
+    };
+
+    function buildBurst() {
+      const colors = ["#1657a8", "#d33f49", "#f0b84d", "#138a5b", "#ffffff"];
+      const pieces = Array.from({ length: 34 }, (_, index) => {
+        const angle = Math.round((360 / 34) * index);
+        const color = colors[index % colors.length];
+        return `<span style="--angle: ${angle}deg; --piece: ${color}; animation-delay: ${index * 7}ms"></span>`;
+      });
+      elements.burst.innerHTML = pieces.join("");
+    }
+
+    function showView(view) {
+      elements.landingView.classList.toggle("active", view === "landing");
+      elements.toolView.classList.toggle("active", view === "tool");
+      state.toolActive = view === "tool";
+    }
+
+    function normalizeAnswer(value) {
+      return value
+        .normalize("NFC")
+        .toLocaleLowerCase("hr-HR")
+        .replace(/[.,!?;:()[\]{}"']/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function pickWord() {
+      clearAdvanceTimer();
+      let index = Math.floor(Math.random() * WORDS.length);
+      if (WORDS.length > 1) {
+        while (index === state.previousIndex) {
+          index = Math.floor(Math.random() * WORDS.length);
+        }
+      }
+      state.previousIndex = index;
+      state.current = WORDS[index];
+      state.seen += 1;
+      renderPrompt();
+    }
+
+    function renderPrompt() {
+      const word = state.current;
+      elements.toolTitle.textContent = word.singular;
+      elements.wordMeta.textContent = `${word.gender} noun${word.notes ? ` · ${word.notes}` : ""}`;
+      elements.typedAnswer.value = "";
+      elements.result.className = "result empty";
+      elements.result.textContent = "Say or type the plural form.";
+      elements.nextButton.hidden = true;
+      elements.typedAnswer.focus({ preventScroll: true });
+      renderScore();
+      scheduleListening();
+    }
+
+    function renderScore() {
+      elements.correctCount.textContent = state.correct;
+      elements.streakCount.textContent = state.streak;
+      elements.seenCount.textContent = state.seen;
+    }
+
+    function clearAdvanceTimer() {
+      if (state.advanceTimer) {
+        window.clearTimeout(state.advanceTimer);
+        state.advanceTimer = null;
+      }
+    }
+
+    function clearListenTimer() {
+      if (state.listenTimer) {
+        window.clearTimeout(state.listenTimer);
+        state.listenTimer = null;
+      }
+    }
+
+    function scheduleNextWord(isCorrect) {
+      clearAdvanceTimer();
+      clearListenTimer();
+      state.advanceTimer = window.setTimeout(() => {
+        state.advanceTimer = null;
+        pickWord();
+      }, isCorrect ? 2000 : 4000);
+    }
+
+    function scheduleListening() {
+      clearListenTimer();
+      if (!state.toolActive || !state.recognition) {
+        return;
+      }
+      state.listenTimer = window.setTimeout(() => {
+        state.listenTimer = null;
+        startListening(true);
+      }, 250);
+    }
+
+    function gradeAnswer(rawAnswer, method) {
+      const answers = collectSpeechAlternatives(rawAnswer);
+      const answer = normalizeAnswer(answers[0] || "");
+      if (!answers.some((item) => normalizeAnswer(item))) {
+        showNeutral("I did not catch an answer. Try again or type it.");
+        return;
+      }
+
+      const expected = normalizeAnswer(state.current.plural);
+      const isCorrect = answer === expected;
+      const matchedAlternative = answers.some((item) => normalizeAnswer(item) === expected);
+
+      showResult(isCorrect || matchedAlternative, rawAnswer, method);
+    }
+
+    function collectSpeechAlternatives(rawAnswer) {
+      if (!Array.isArray(rawAnswer)) {
+        return [rawAnswer];
+      }
+      return rawAnswer;
+    }
+
+    function showNeutral(message) {
+      elements.result.className = "result empty";
+      elements.result.textContent = message;
+    }
+
+    function showResult(isCorrect, rawAnswer, method) {
+      const spoken = Array.isArray(rawAnswer) ? rawAnswer[0] : rawAnswer;
+      const word = state.current;
+
+      if (isCorrect) {
+        state.correct += 1;
+        state.streak += 1;
+        animateCorrect();
+      } else {
+        state.streak = 0;
+        animateIncorrect();
+      }
+
+      elements.result.className = `result ${isCorrect ? "correct" : "incorrect"}`;
+      elements.result.innerHTML = `
+        <p class="result-title">${isCorrect ? "Correct" : "Not quite"}</p>
+        <dl>
+          <dt>${method === "speech" ? "Heard" : "You typed"}</dt>
+          <dd>${escapeHtml(spoken)}</dd>
+          <dt>Plural</dt>
+          <dd>${escapeHtml(word.plural)}</dd>
+          <dt>Meaning</dt>
+          <dd>${escapeHtml(word.english)}</dd>
+        </dl>
+      `;
+      elements.nextButton.hidden = false;
+      renderScore();
+      scheduleNextWord(isCorrect);
+    }
+
+    function animateCorrect() {
+      elements.trainer.classList.remove("celebrate");
+      void elements.trainer.offsetWidth;
+      elements.trainer.classList.add("celebrate");
+      window.setTimeout(() => elements.trainer.classList.remove("celebrate"), 900);
+    }
+
+    function animateIncorrect() {
+      elements.trainer.classList.remove("shake");
+      void elements.trainer.offsetWidth;
+      elements.trainer.classList.add("shake");
+      window.setTimeout(() => elements.trainer.classList.remove("shake"), 480);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function setupSpeechRecognition() {
+      const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!Recognition) {
+        elements.micButton.disabled = true;
+        elements.speechStatus.textContent = "Speech recognition is not available in this browser. Typed answers still work.";
+        return;
+      }
+
+      const recognition = new Recognition();
+      recognition.lang = "hr-HR";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 3;
+
+      recognition.addEventListener("start", () => {
+        state.listening = true;
+        elements.micButton.classList.add("listening");
+        elements.speechStatus.textContent = "Listening for Croatian speech...";
+        showNeutral("Listening...");
+      });
+
+      recognition.addEventListener("end", () => {
+        state.listening = false;
+        elements.micButton.classList.remove("listening");
+        elements.speechStatus.textContent = "Ready for another spoken answer. The next prompt will listen automatically.";
+      });
+
+      recognition.addEventListener("result", (event) => {
+        const alternatives = Array.from(event.results[0], (result) => result.transcript);
+        gradeAnswer(alternatives, "speech");
+      });
+
+      recognition.addEventListener("nomatch", () => {
+        showNeutral("I could not match the speech. Try again or type the answer.");
+      });
+
+      recognition.addEventListener("error", (event) => {
+        const messages = {
+          "not-allowed": "Microphone permission was blocked. Typed answers still work.",
+          "no-speech": "No speech was detected. Try again or type the answer.",
+          "audio-capture": "No microphone was found. Typed answers still work.",
+          network: "Speech recognition needs network access in this browser right now. Typed answers still work."
+        };
+        elements.speechStatus.textContent = messages[event.error] || `Speech recognition error: ${event.error}. Typed answers still work.`;
+        showNeutral(elements.speechStatus.textContent);
+      });
+
+      state.recognition = recognition;
+      elements.speechStatus.textContent = "Speech recognition is available. Chrome may send audio to an online service.";
+    }
+
+    function startListening(isAutomatic = false) {
+      if (!state.recognition || state.listening) {
+        return;
+      }
+      try {
+        state.recognition.start();
+      } catch (error) {
+        elements.speechStatus.textContent = isAutomatic
+          ? "Automatic listening was blocked. Press the microphone button to answer."
+          : "Speech recognition is already starting. Try again in a moment.";
+      }
+    }
+
+    function stopListening() {
+      clearListenTimer();
+      if (state.recognition && state.listening) {
+        state.recognition.abort();
+      }
+    }
+
+    elements.startToolButton.addEventListener("click", () => {
+      showView("tool");
+      if (!state.current) {
+        pickWord();
+      } else {
+        scheduleListening();
+      }
+    });
+
+    elements.backButton.addEventListener("click", () => {
+      stopListening();
+      clearAdvanceTimer();
+      showView("landing");
+    });
+
+    elements.micButton.addEventListener("click", startListening);
+
+    elements.skipButton.addEventListener("click", () => {
+      state.streak = 0;
+      pickWord();
+    });
+
+    elements.typedForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      gradeAnswer(elements.typedAnswer.value, "typed");
+    });
+
+    elements.nextButton.addEventListener("click", pickWord);
+
+    buildBurst();
+    setupSpeechRecognition();
+  </script>
+</body>
+</html>
