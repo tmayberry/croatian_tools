@@ -501,6 +501,41 @@
       font-size: 0.94rem;
     }
 
+    .toggle-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .toggle-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: start;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .toggle-row input {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: var(--blue);
+    }
+
+    .toggle-row strong {
+      display: block;
+      font-size: 0.95rem;
+      line-height: 1.25;
+    }
+
+    .toggle-row span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
     .source-links {
       display: grid;
       gap: 8px;
@@ -741,12 +776,31 @@
 
         <aside class="side-panel">
           <section class="info-block">
+            <h2>Settings</h2>
+            <div class="toggle-list">
+              <label class="toggle-row">
+                <input id="speechToggle" type="checkbox" checked>
+                <span>
+                  <strong>Speech recognition</strong>
+                  <span>Listen automatically when available.</span>
+                </span>
+              </label>
+              <label class="toggle-row">
+                <input id="diacriticsToggle" type="checkbox" checked>
+                <span>
+                  <strong>Ignore Croatian marks</strong>
+                  <span>Accept c for č or ć, s for š, z for ž, and d for đ.</span>
+                </span>
+              </label>
+            </div>
+          </section>
+          <section class="info-block">
             <h2>Speech</h2>
             <p id="speechStatus">Chrome speech recognition will be detected when practice starts.</p>
           </section>
           <section class="info-block">
             <h2>Data</h2>
-            <p>Starter nouns are curated for Croatian practice and include English meanings after each answer.</p>
+            <p>Starter nouns are curated for Croatian practice and show English meanings with each prompt.</p>
             <div class="source-links">
               <a href="https://kaikki.org/dictionary/Serbo-Croatian/index.html" target="_blank" rel="noreferrer">Kaikki/Wiktionary source</a>
               <a href="https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition" target="_blank" rel="noreferrer">Web Speech API notes</a>
@@ -850,6 +904,8 @@
       restartTimer: null,
       acceptingSpeech: false,
       intentionallyStopped: false,
+      speechEnabled: true,
+      ignoreDiacritics: true,
       toolActive: false
     };
 
@@ -861,6 +917,8 @@
       toolTitle: document.querySelector("#toolTitle"),
       wordMeta: document.querySelector("#wordMeta"),
       micButton: document.querySelector("#micButton"),
+      speechToggle: document.querySelector("#speechToggle"),
+      diacriticsToggle: document.querySelector("#diacriticsToggle"),
       skipButton: document.querySelector("#skipButton"),
       typedForm: document.querySelector("#typedForm"),
       typedAnswer: document.querySelector("#typedAnswer"),
@@ -891,12 +949,21 @@
     }
 
     function normalizeAnswer(value) {
-      return value
+      const normalized = value
         .normalize("NFC")
         .toLocaleLowerCase("hr-HR")
         .replace(/[.,!?;:()[\]{}"']/g, " ")
         .replace(/\s+/g, " ")
         .trim();
+      return state.ignoreDiacritics ? foldCroatianDiacritics(normalized) : normalized;
+    }
+
+    function foldCroatianDiacritics(value) {
+      return value
+        .replace(/[čć]/g, "c")
+        .replace(/š/g, "s")
+        .replace(/ž/g, "z")
+        .replace(/đ/g, "d");
     }
 
     function pickWord() {
@@ -919,7 +986,7 @@
       elements.wordMeta.textContent = `${word.english} · ${word.gender} noun${word.notes ? ` · ${word.notes}` : ""}`;
       elements.typedAnswer.value = "";
       elements.result.className = "result empty";
-      elements.result.textContent = "Say or type the plural form.";
+      elements.result.textContent = state.speechEnabled ? "Say or type the plural form." : "Type the plural form.";
       elements.nextButton.hidden = true;
       state.acceptingSpeech = true;
       elements.typedAnswer.focus({ preventScroll: true });
@@ -966,7 +1033,7 @@
 
     function scheduleListening() {
       clearListenTimer();
-      if (!state.toolActive || !state.recognition) {
+      if (!state.toolActive || !state.recognition || !state.speechEnabled) {
         return;
       }
       state.listenTimer = window.setTimeout(() => {
@@ -1006,7 +1073,7 @@
     function setSpeechState(status, message) {
       elements.micButton.classList.toggle("listening", status === "listening");
       elements.micButton.classList.toggle("resuming", status === "resuming");
-      elements.micButton.classList.toggle("paused", status === "paused" || status === "blocked");
+      elements.micButton.classList.toggle("paused", status === "paused" || status === "blocked" || status === "unavailable");
 
       const labels = {
         idle: "Start speech recognition",
@@ -1101,6 +1168,10 @@
 
       recognition.addEventListener("end", () => {
         state.listening = false;
+        if (!state.speechEnabled) {
+          setSpeechState("unavailable", "Speech recognition is off. Typed answers still work.");
+          return;
+        }
         if (state.toolActive && !state.intentionallyStopped) {
           setSpeechState("resuming", "Listening paused. Trying to resume automatically...");
           if (state.acceptingSpeech) {
@@ -1156,7 +1227,7 @@
 
     function scheduleRecognitionRestart() {
       clearRestartTimer();
-      if (!state.toolActive || !state.recognition || state.intentionallyStopped) {
+      if (!state.toolActive || !state.recognition || !state.speechEnabled || state.intentionallyStopped) {
         return;
       }
       setSpeechState("resuming", "Listening paused. Trying to resume automatically...");
@@ -1167,7 +1238,7 @@
     }
 
     function ensureListening(isAutomatic = false) {
-      if (!state.recognition || state.listening) {
+      if (!state.speechEnabled || !state.recognition || state.listening) {
         return;
       }
       try {
@@ -1195,6 +1266,31 @@
       setSpeechState("paused", "Speech recognition is paused.");
     }
 
+    function setSpeechEnabled(enabled) {
+      state.speechEnabled = enabled;
+      elements.speechToggle.checked = enabled;
+      elements.micButton.disabled = !enabled || !state.recognition;
+
+      if (enabled) {
+        state.intentionallyStopped = false;
+        state.acceptingSpeech = state.toolActive && state.current && elements.nextButton.hidden;
+        setSpeechState("idle", state.recognition
+          ? "Speech recognition is available. Chrome may send audio to an online service."
+          : "Speech recognition is not available in this browser. Typed answers still work.");
+        if (state.toolActive && state.current && elements.nextButton.hidden) {
+          showNeutral("Say or type the plural form.");
+          scheduleListening();
+        }
+      } else {
+        stopListening();
+        elements.micButton.disabled = true;
+        setSpeechState("unavailable", "Speech recognition is off. Typed answers still work.");
+        if (state.toolActive && state.current && elements.nextButton.hidden) {
+          showNeutral("Type the plural form.");
+        }
+      }
+    }
+
     elements.startToolButton.addEventListener("click", () => {
       showView("tool");
       if (!state.current) {
@@ -1215,6 +1311,14 @@
       state.intentionallyStopped = false;
       state.acceptingSpeech = elements.nextButton.hidden;
       ensureListening(false);
+    });
+
+    elements.speechToggle.addEventListener("change", () => {
+      setSpeechEnabled(elements.speechToggle.checked);
+    });
+
+    elements.diacriticsToggle.addEventListener("change", () => {
+      state.ignoreDiacritics = elements.diacriticsToggle.checked;
     });
 
     elements.skipButton.addEventListener("click", () => {
