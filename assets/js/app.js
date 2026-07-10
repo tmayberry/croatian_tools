@@ -1,8 +1,19 @@
+import {
+  ADJECTIVES,
+  DRINKS,
+  FOODS,
+  NOMINATIVE_NOUNS,
+  OBJECTS,
+  PEOPLE,
+  PLACES,
+  SURFACES
+} from "./a1-sentence-data.js";
 import { VISUALS, WORDS } from "./nominative-plural-data.js";
 
 const state = {
-  current: null,
-  previousIndex: -1,
+  currentModule: null,
+  currentPrompt: null,
+  previousPromptIds: {},
   correct: 0,
   streak: 0,
   seen: 0,
@@ -19,8 +30,9 @@ const state = {
 const elements = {
   landingView: document.querySelector("#landingView"),
   toolView: document.querySelector("#toolView"),
-  startToolButton: document.querySelector("#startToolButton"),
+  moduleButtons: document.querySelectorAll("[data-module-id]"),
   backButton: document.querySelector("#backButton"),
+  promptLabel: document.querySelector("#promptLabel"),
   wordVisual: document.querySelector("#wordVisual"),
   toolTitle: document.querySelector("#toolTitle"),
   wordMeta: document.querySelector("#wordMeta"),
@@ -29,10 +41,12 @@ const elements = {
   diacriticsToggle: document.querySelector("#diacriticsToggle"),
   skipButton: document.querySelector("#skipButton"),
   typedForm: document.querySelector("#typedForm"),
+  typedAnswerLabel: document.querySelector("#typedAnswerLabel"),
   typedAnswer: document.querySelector("#typedAnswer"),
   result: document.querySelector("#result"),
   nextButton: document.querySelector("#nextButton"),
   speechStatus: document.querySelector("#speechStatus"),
+  dataDescription: document.querySelector("#dataDescription"),
   correctCount: document.querySelector("#correctCount"),
   streakCount: document.querySelector("#streakCount"),
   seenCount: document.querySelector("#seenCount"),
@@ -56,6 +70,105 @@ function showView(view) {
   state.toolActive = view === "tool";
 }
 
+function pickItem(items) {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+function createPluralPrompt() {
+  const word = pickItem(WORDS);
+  return {
+    id: `plural:${word.singular}`,
+    title: word.singular,
+    meta: `${word.english} · ${word.gender} noun${word.notes ? ` · ${word.notes}` : ""}`,
+    visual: VISUALS[word.singular] || "🖼️",
+    expectedAnswers: [word.plural],
+    expectedLabel: "Plural",
+    promptLabel: "Make the nominative plural",
+    placeholder: "Type the plural instead",
+    typedLabel: "Typed plural answer",
+    readyText: "Hold space or the mic to answer, or type the plural form.",
+    typedOnlyText: "Type the plural form.",
+    allowSpaces: false
+  };
+}
+
+const sentenceTemplates = [
+  () => {
+    const object = pickItem(OBJECTS);
+    return sentencePrompt(`I have ${object.en}.`, `Imam ${object.acc}.`, object.visual);
+  },
+  () => {
+    const object = pickItem(OBJECTS);
+    return sentencePrompt(`I do not have ${object.en}.`, `Nemam ${object.acc}.`, object.visual);
+  },
+  () => {
+    const person = pickItem(PEOPLE);
+    const object = pickItem(OBJECTS);
+    return sentencePrompt(`${person.en} has ${object.en}.`, `${person.hr} ima ${object.acc}.`, object.visual || person.visual);
+  },
+  () => {
+    const object = pickItem([...OBJECTS, ...FOODS, ...DRINKS]);
+    return sentencePrompt(`I like ${object.en}.`, `Volim ${object.acc}.`, object.visual);
+  },
+  () => {
+    const place = pickItem(PLACES);
+    return sentencePrompt(`I am going to ${place.en}.`, `Idem u ${place.acc}.`, place.visual);
+  },
+  () => {
+    const place = pickItem(PLACES);
+    return sentencePrompt(`I am in ${place.en}.`, `Ja sam u ${place.loc}.`, place.visual);
+  },
+  () => {
+    const object = pickItem(NOMINATIVE_NOUNS);
+    const surface = pickItem(SURFACES);
+    return sentencePrompt(`${object.en} is on ${surface.en}.`, `${object.hr} je na ${surface.loc}.`, object.visual || surface.visual);
+  },
+  () => {
+    const noun = pickItem(NOMINATIVE_NOUNS);
+    const adjective = pickItem(ADJECTIVES);
+    return sentencePrompt(`${noun.en} is ${adjective.en}.`, `${noun.hr} je ${adjective.forms[noun.gender]}.`, noun.visual);
+  },
+  () => {
+    const food = pickItem(FOODS);
+    return sentencePrompt(`I eat ${food.en}.`, `Jedem ${food.acc}.`, food.visual);
+  },
+  () => {
+    const drink = pickItem(DRINKS);
+    return sentencePrompt(`I drink ${drink.en}.`, `Pijem ${drink.acc}.`, drink.visual);
+  }
+];
+
+function sentencePrompt(english, croatian, visual) {
+  const displayEnglish = english.charAt(0).toUpperCase() + english.slice(1);
+  return {
+    id: `sentence:${displayEnglish}:${croatian}`,
+    title: displayEnglish,
+    meta: "Translate into Croatian",
+    visual: visual || "💬",
+    expectedAnswers: [croatian],
+    expectedLabel: "Croatian",
+    promptLabel: "Translate this sentence",
+    placeholder: "Type the Croatian sentence",
+    typedLabel: "Typed Croatian sentence",
+    readyText: "Hold the mic to answer by speech, or type the Croatian sentence.",
+    typedOnlyText: "Type the Croatian sentence.",
+    allowSpaces: true
+  };
+}
+
+const modules = {
+  nominativePlural: {
+    id: "nominativePlural",
+    dataDescription: "Starter nouns are curated for Croatian practice and show English meanings plus a visual cue with each prompt.",
+    nextPrompt: createPluralPrompt
+  },
+  a1Sentences: {
+    id: "a1Sentences",
+    dataDescription: "A1 sentence prompts use controlled templates and pre-inflected Croatian word banks.",
+    nextPrompt: () => pickItem(sentenceTemplates)()
+  }
+};
+
 function normalizeAnswer(value) {
   const normalized = value
     .normalize("NFC")
@@ -74,28 +187,34 @@ function foldCroatianDiacritics(value) {
     .replace(/đ/g, "d");
 }
 
-function pickWord() {
+function pickPrompt() {
   clearAdvanceTimer();
-  let index = Math.floor(Math.random() * WORDS.length);
-  if (WORDS.length > 1) {
-    while (index === state.previousIndex) {
-      index = Math.floor(Math.random() * WORDS.length);
-    }
+  const module = state.currentModule;
+  let prompt = module.nextPrompt();
+  const previousId = state.previousPromptIds[module.id];
+  let attempts = 0;
+  while (prompt.id === previousId && attempts < 8) {
+    prompt = module.nextPrompt();
+    attempts += 1;
   }
-  state.previousIndex = index;
-  state.current = WORDS[index];
+  state.previousPromptIds[module.id] = prompt.id;
+  state.currentPrompt = prompt;
   state.seen += 1;
   renderPrompt();
 }
 
 function renderPrompt() {
-  const word = state.current;
-  elements.wordVisual.textContent = VISUALS[word.singular] || "🖼️";
-  elements.toolTitle.textContent = word.singular;
-  elements.wordMeta.textContent = `${word.english} · ${word.gender} noun${word.notes ? ` · ${word.notes}` : ""}`;
+  const prompt = state.currentPrompt;
+  elements.promptLabel.textContent = prompt.promptLabel;
+  elements.wordVisual.textContent = prompt.visual;
+  elements.toolTitle.textContent = prompt.title;
+  elements.toolTitle.classList.toggle("sentence-card", prompt.allowSpaces);
+  elements.wordMeta.textContent = prompt.meta;
+  elements.typedAnswerLabel.textContent = prompt.typedLabel;
+  elements.typedAnswer.placeholder = prompt.placeholder;
   elements.typedAnswer.value = "";
   elements.result.className = "result empty";
-  elements.result.textContent = state.speechEnabled ? "Hold space or the mic to answer, or type the plural form." : "Type the plural form.";
+  elements.result.textContent = state.speechEnabled ? prompt.readyText : prompt.typedOnlyText;
   elements.nextButton.hidden = true;
   state.acceptingSpeech = true;
   elements.typedAnswer.focus({ preventScroll: true });
@@ -115,12 +234,12 @@ function clearAdvanceTimer() {
   }
 }
 
-function scheduleNextWord(isCorrect) {
+function scheduleNextPrompt(isCorrect) {
   clearAdvanceTimer();
   state.acceptingSpeech = false;
   state.advanceTimer = window.setTimeout(() => {
     state.advanceTimer = null;
-    pickWord();
+    pickPrompt();
   }, isCorrect ? 2000 : 4000);
 }
 
@@ -128,15 +247,16 @@ function gradeAnswer(rawAnswer, method) {
   const answers = collectSpeechAlternatives(rawAnswer);
   const answer = normalizeAnswer(answers[0] || "");
   if (!answers.some((item) => normalizeAnswer(item))) {
-    showNeutral(state.speechEnabled
-      ? "I did not catch an answer. Hold space or the mic and try again."
-      : "Type the plural form.");
+    showNeutral(method === "speech" && state.speechEnabled
+      ? `I did not catch an answer. ${speechInstruction()}`
+      : state.currentPrompt.typedOnlyText);
     return;
   }
 
-  const expected = normalizeAnswer(state.current.plural);
-  const isCorrect = answer === expected;
-  const matchedAnswer = answers.find((item) => normalizeAnswer(item) === expected);
+  const expectedAnswers = state.currentPrompt.expectedAnswers;
+  const normalizedExpectedAnswers = expectedAnswers.map((expected) => normalizeAnswer(expected));
+  const isCorrect = normalizedExpectedAnswers.includes(answer);
+  const matchedAnswer = answers.find((item) => normalizedExpectedAnswers.includes(normalizeAnswer(item)));
 
   showResult(isCorrect || Boolean(matchedAnswer), matchedAnswer || rawAnswer, method);
 }
@@ -151,6 +271,12 @@ function collectSpeechAlternatives(rawAnswer) {
 function showNeutral(message) {
   elements.result.className = "result empty";
   elements.result.textContent = message;
+}
+
+function speechInstruction() {
+  return state.currentPrompt?.allowSpaces
+    ? "Hold the microphone to answer. Space types spaces in this module."
+    : speechInstruction();
 }
 
 function setSpeechState(status, message) {
@@ -176,7 +302,7 @@ function setSpeechState(status, message) {
 function showResult(isCorrect, rawAnswer, method) {
   state.acceptingSpeech = false;
   const spoken = Array.isArray(rawAnswer) ? rawAnswer[0] : rawAnswer;
-  const word = state.current;
+  const prompt = state.currentPrompt;
 
   if (isCorrect) {
     state.correct += 1;
@@ -193,13 +319,13 @@ function showResult(isCorrect, rawAnswer, method) {
     <dl>
       <dt>${method === "speech" ? "Heard" : "You typed"}</dt>
       <dd>${escapeHtml(spoken)}</dd>
-      <dt>Plural</dt>
-      <dd>${escapeHtml(word.plural)}</dd>
+      <dt>${escapeHtml(prompt.expectedLabel)}</dt>
+      <dd>${escapeHtml(prompt.expectedAnswers[0])}</dd>
     </dl>
   `;
   elements.nextButton.hidden = false;
   renderScore();
-  scheduleNextWord(isCorrect);
+  scheduleNextPrompt(isCorrect);
 }
 
 function animateCorrect() {
@@ -254,9 +380,9 @@ function setupSpeechRecognition() {
       setSpeechState("unavailable", "Speech recognition is off. Typed answers still work.");
       return;
     }
-    setSpeechState("idle", "Hold space or hold the microphone to answer.");
+    setSpeechState("idle", speechInstruction());
     if (state.acceptingSpeech && elements.result.textContent === "Listening...") {
-      showNeutral("Hold space or the mic to try again, or type the answer.");
+      showNeutral(`${speechInstruction()} Or type the answer.`);
     }
   });
 
@@ -274,7 +400,7 @@ function setupSpeechRecognition() {
 
   recognition.addEventListener("nomatch", () => {
     if (state.acceptingSpeech) {
-      showNeutral("I could not match the speech. Hold space or the mic and try again.");
+      showNeutral(`I could not match the speech. ${speechInstruction()}`);
     }
   });
 
@@ -289,7 +415,7 @@ function setupSpeechRecognition() {
     if (event.error === "not-allowed" || event.error === "service-not-allowed" || event.error === "audio-capture") {
       setSpeechState("blocked", message);
     } else {
-      setSpeechState("idle", "Hold space or hold the microphone to answer.");
+      setSpeechState("idle", speechInstruction());
     }
     if (state.acceptingSpeech) {
       showNeutral(message);
@@ -297,7 +423,7 @@ function setupSpeechRecognition() {
   });
 
   state.recognition = recognition;
-  setSpeechState("idle", "Hold space or hold the microphone to answer.");
+  setSpeechState("idle", speechInstruction());
 }
 
 function startPushToTalk(event) {
@@ -333,7 +459,7 @@ function stopPushToTalk(event) {
       state.recognition.stop();
     } catch (error) {
       state.listening = false;
-      setSpeechState("idle", "Hold space or hold the microphone to answer.");
+      setSpeechState("idle", speechInstruction());
     }
   }
 }
@@ -347,7 +473,7 @@ function abortSpeech() {
       state.listening = false;
     }
   }
-  setSpeechState("idle", "Hold space or hold the microphone to answer.");
+  setSpeechState("idle", speechInstruction());
 }
 
 function setSpeechEnabled(enabled) {
@@ -356,30 +482,45 @@ function setSpeechEnabled(enabled) {
   elements.micButton.disabled = !enabled || !state.recognition;
 
   if (enabled) {
-    state.acceptingSpeech = state.toolActive && state.current && elements.nextButton.hidden;
+    state.acceptingSpeech = state.toolActive && state.currentPrompt && elements.nextButton.hidden;
     setSpeechState("idle", state.recognition
-      ? "Hold space or hold the microphone to answer."
+      ? speechInstruction()
       : "Speech recognition is not available in this browser. Typed answers still work.");
-    if (state.toolActive && state.current && elements.nextButton.hidden) {
-      showNeutral("Hold space or the mic to answer, or type the plural form.");
+    if (state.toolActive && state.currentPrompt && elements.nextButton.hidden) {
+      showNeutral(state.currentPrompt.readyText);
     }
   } else {
     abortSpeech();
     elements.micButton.disabled = true;
     setSpeechState("unavailable", "Speech recognition is off. Typed answers still work.");
-    if (state.toolActive && state.current && elements.nextButton.hidden) {
-      showNeutral("Type the plural form.");
+    if (state.toolActive && state.currentPrompt && elements.nextButton.hidden) {
+      showNeutral(state.currentPrompt.typedOnlyText);
     }
   }
 }
 
-elements.startToolButton.addEventListener("click", () => {
-  showView("tool");
-  if (!state.current) {
-    pickWord();
-  } else {
-    state.acceptingSpeech = elements.nextButton.hidden;
+function startModule(moduleId) {
+  const module = modules[moduleId];
+  if (!module) {
+    return;
   }
+  abortSpeech();
+  clearAdvanceTimer();
+  state.currentModule = module;
+  state.currentPrompt = null;
+  state.correct = 0;
+  state.streak = 0;
+  state.seen = 0;
+  elements.dataDescription.textContent = module.dataDescription;
+  showView("tool");
+  renderScore();
+  pickPrompt();
+}
+
+elements.moduleButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    startModule(button.dataset.moduleId);
+  });
 });
 
 elements.backButton.addEventListener("click", () => {
@@ -402,12 +543,18 @@ elements.diacriticsToggle.addEventListener("change", () => {
 });
 
 window.addEventListener("keydown", (event) => {
+  if (event.target === elements.typedAnswer && state.currentPrompt?.allowSpaces) {
+    return;
+  }
   if (event.code === "Space" && !event.repeat && state.speechEnabled) {
     startPushToTalk(event);
   }
 });
 
 window.addEventListener("keyup", (event) => {
+  if (event.target === elements.typedAnswer && state.currentPrompt?.allowSpaces) {
+    return;
+  }
   if (event.code === "Space" && (state.speechEnabled || state.pushToTalkActive)) {
     stopPushToTalk(event);
   }
@@ -415,7 +562,7 @@ window.addEventListener("keyup", (event) => {
 
 elements.skipButton.addEventListener("click", () => {
   state.streak = 0;
-  pickWord();
+  pickPrompt();
 });
 
 elements.typedForm.addEventListener("submit", (event) => {
@@ -424,16 +571,18 @@ elements.typedForm.addEventListener("submit", (event) => {
 });
 
 elements.typedAnswer.addEventListener("beforeinput", (event) => {
-  if (event.data && /\s/.test(event.data)) {
+  if (!state.currentPrompt?.allowSpaces && event.data && /\s/.test(event.data)) {
     event.preventDefault();
   }
 });
 
 elements.typedAnswer.addEventListener("input", () => {
-  elements.typedAnswer.value = elements.typedAnswer.value.replace(/\s+/g, "");
+  if (!state.currentPrompt?.allowSpaces) {
+    elements.typedAnswer.value = elements.typedAnswer.value.replace(/\s+/g, "");
+  }
 });
 
-elements.nextButton.addEventListener("click", pickWord);
+elements.nextButton.addEventListener("click", pickPrompt);
 
 buildBurst();
 setupSpeechRecognition();

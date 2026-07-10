@@ -6,8 +6,9 @@ A static GitHub Pages site for Croatian practice tools.
 
 - `index.html` contains the page markup and module entrypoint.
 - `assets/css/styles.css` contains all styling.
-- `assets/js/app.js` contains the app behavior for the current practice tool.
+- `assets/js/app.js` contains the shared trainer behavior and module registry.
 - `assets/js/nominative-plural-data.js` contains the noun list and visual cues for nominative plural practice.
+- `assets/js/a1-sentence-data.js` contains the controlled A1 word banks for sentence translation practice.
 
 ## Local Development
 

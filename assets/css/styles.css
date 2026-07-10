@@ -153,6 +153,31 @@ h1 {
   transform: translateY(-1px);
 }
 
+.module-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.module-card {
+  justify-content: space-between;
+  min-width: min(100%, 290px);
+  margin-top: 0;
+  text-align: left;
+}
+
+.module-card span {
+  display: grid;
+  gap: 3px;
+}
+
+.module-card small {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
 .landing-preview {
   position: absolute;
   right: clamp(20px, 7vw, 96px);
@@ -188,9 +213,10 @@ h1 {
 }
 
 .preview-word {
-  font-size: 1.45rem;
+  font-size: clamp(1.08rem, 3vw, 1.45rem);
   font-weight: 900;
   color: var(--blue-dark);
+  overflow-wrap: anywhere;
 }
 
 .tool-shell {
@@ -325,6 +351,12 @@ h1 {
   letter-spacing: 0;
   color: var(--blue-dark);
   word-break: break-word;
+}
+
+.word-card.sentence-card {
+  max-width: 760px;
+  font-size: clamp(2rem, 5vw, 4.25rem);
+  line-height: 1.08;
 }
 
 .word-visual {

@@ -24,32 +24,46 @@
 
       <div class="landing-inner">
         <div class="hero-text">
-          <p class="eyebrow">Nominative plural practice</p>
+          <p class="eyebrow">Croatian practice tools</p>
           <h1 id="landingTitle">Croatian Tools</h1>
-          <p class="hero-copy">A tiny practice page for drilling Croatian noun plurals with your voice, your keyboard, and quick feedback.</p>
-          <button id="startToolButton" class="primary-action" type="button">
-            Start practice
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
+          <p class="hero-copy">Small focused drills for Croatian grammar, translation, and speaking practice.</p>
+          <div class="module-actions" aria-label="Practice modules">
+            <button class="module-card primary-action" type="button" data-module-id="nominativePlural">
+              <span>
+                <strong>Nominative plural</strong>
+                <small>Make Croatian noun plurals.</small>
+              </span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <button class="module-card primary-action" type="button" data-module-id="a1Sentences">
+              <span>
+                <strong>A1 sentence translation</strong>
+                <small>Translate English prompts into Croatian.</small>
+              </span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
       <aside class="landing-preview" aria-label="Practice preview">
         <div class="preview-row">
           <div>
-            <div class="preview-label">Singular</div>
-            <div class="preview-word">grad</div>
+            <div class="preview-label">English</div>
+            <div class="preview-word">I have a book.</div>
           </div>
-          <div class="preview-label">city</div>
+          <div class="preview-label">A1</div>
         </div>
         <div class="preview-row">
           <div>
-            <div class="preview-label">Say</div>
-            <div class="preview-word">gradovi</div>
+            <div class="preview-label">Croatian</div>
+            <div class="preview-word">Imam knjigu.</div>
           </div>
-          <div class="preview-label">plural</div>
+          <div class="preview-label">answer</div>
         </div>
       </aside>
     </section>
@@ -73,7 +87,7 @@
         <article id="trainer" class="trainer">
           <div class="burst" aria-hidden="true" id="burst"></div>
           <div class="trainer-content">
-            <p class="prompt-label">Make the nominative plural</p>
+            <p id="promptLabel" class="prompt-label">Make the nominative plural</p>
             <div id="wordVisual" class="word-visual" aria-hidden="true">🌊</div>
             <h2 id="toolTitle" class="word-card">rijeka</h2>
             <p id="wordMeta" class="word-meta">river · feminine noun</p>
@@ -89,7 +103,7 @@
             </div>
 
             <form id="typedForm" class="typed-form" autocomplete="off">
-              <label class="sr-only" for="typedAnswer">Typed plural answer</label>
+              <label id="typedAnswerLabel" class="sr-only" for="typedAnswer">Typed answer</label>
               <input id="typedAnswer" type="text" inputmode="text" placeholder="Type the plural instead">
               <button class="check-button" type="submit">Check</button>
             </form>
@@ -107,7 +121,7 @@
                 <input id="speechToggle" type="checkbox" checked>
                 <span>
                   <strong>Speech recognition</strong>
-                  <span>Hold space or press the mic to answer.</span>
+                  <span>Hold the mic to answer; Space also works outside sentence typing.</span>
                 </span>
               </label>
               <label class="toggle-row">
@@ -125,7 +139,7 @@
           </section>
           <section class="info-block">
             <h2>Data</h2>
-            <p>Starter nouns are curated for Croatian practice and show English meanings plus a visual cue with each prompt.</p>
+            <p id="dataDescription">Starter nouns are curated for Croatian practice and show English meanings plus a visual cue with each prompt.</p>
             <div class="source-links">
               <a href="https://kaikki.org/dictionary/Serbo-Croatian/index.html" target="_blank" rel="noreferrer">Kaikki/Wiktionary source</a>
               <a href="https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition" target="_blank" rel="noreferrer">Web Speech API notes</a>
