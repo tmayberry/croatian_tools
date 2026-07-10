@@ -274,9 +274,12 @@ function showNeutral(message) {
 }
 
 function speechInstruction() {
+  if (!state.currentPrompt) {
+    return "Choose a practice module to begin.";
+  }
   return state.currentPrompt?.allowSpaces
     ? "Hold the microphone to answer. Space types spaces in this module."
-    : speechInstruction();
+    : "Hold space or hold the microphone to answer.";
 }
 
 function setSpeechState(status, message) {
