@@ -21,6 +21,7 @@ const state = {
   listening: false,
   advanceTimer: null,
   acceptingSpeech: false,
+  correctionRequired: false,
   pushToTalkActive: false,
   speechEnabled: true,
   ignoreDiacritics: true,
@@ -216,7 +217,9 @@ function renderPrompt() {
   elements.result.className = "result empty";
   elements.result.textContent = state.speechEnabled ? prompt.readyText : prompt.typedOnlyText;
   elements.nextButton.hidden = true;
+  elements.skipButton.disabled = false;
   state.acceptingSpeech = true;
+  state.correctionRequired = false;
   elements.typedAnswer.focus({ preventScroll: true });
   renderScore();
 }
@@ -244,6 +247,11 @@ function scheduleNextPrompt(isCorrect) {
 }
 
 function gradeAnswer(rawAnswer, method) {
+  if (state.correctionRequired) {
+    gradeCorrection(rawAnswer);
+    return;
+  }
+
   const answers = collectSpeechAlternatives(rawAnswer);
   const answer = normalizeAnswer(answers[0] || "");
   if (!answers.some((item) => normalizeAnswer(item))) {
@@ -317,6 +325,7 @@ function showResult(isCorrect, rawAnswer, method) {
   }
 
   elements.result.className = `result ${isCorrect ? "correct" : "incorrect"}`;
+  const correctionPrompt = isCorrect ? "" : "<p class=\"correction-note\">Type the expected answer to continue.</p>";
   elements.result.innerHTML = `
     <p class="result-title">${isCorrect ? "Correct" : "Not quite"}</p>
     <dl>
@@ -325,10 +334,54 @@ function showResult(isCorrect, rawAnswer, method) {
       <dt>${escapeHtml(prompt.expectedLabel)}</dt>
       <dd>${escapeHtml(prompt.expectedAnswers[0])}</dd>
     </dl>
+    ${correctionPrompt}
+  `;
+  renderScore();
+  if (isCorrect) {
+    elements.nextButton.hidden = false;
+    scheduleNextPrompt(true);
+  } else {
+    clearAdvanceTimer();
+    state.correctionRequired = true;
+    state.acceptingSpeech = false;
+    elements.nextButton.hidden = true;
+    elements.skipButton.disabled = true;
+    elements.typedAnswer.value = "";
+    elements.typedAnswer.placeholder = `Retype: ${prompt.expectedAnswers[0]}`;
+    elements.typedAnswer.focus({ preventScroll: true });
+  }
+}
+
+function gradeCorrection(rawAnswer) {
+  const answer = normalizeAnswer(rawAnswer);
+  const expectedAnswers = state.currentPrompt.expectedAnswers;
+  const normalizedExpectedAnswers = expectedAnswers.map((expected) => normalizeAnswer(expected));
+  if (!normalizedExpectedAnswers.includes(answer)) {
+    elements.result.className = "result incorrect";
+    elements.result.innerHTML = `
+      <p class="result-title">Keep going</p>
+      <dl>
+        <dt>Expected</dt>
+        <dd>${escapeHtml(expectedAnswers[0])}</dd>
+      </dl>
+      <p class="correction-note">Retype the expected answer to continue.</p>
+    `;
+    elements.typedAnswer.select();
+    return;
+  }
+
+  state.correctionRequired = false;
+  elements.result.className = "result correct";
+  elements.result.innerHTML = `
+    <p class="result-title">Reinforced</p>
+    <dl>
+      <dt>${escapeHtml(state.currentPrompt.expectedLabel)}</dt>
+      <dd>${escapeHtml(expectedAnswers[0])}</dd>
+    </dl>
   `;
   elements.nextButton.hidden = false;
-  renderScore();
-  scheduleNextPrompt(isCorrect);
+  elements.skipButton.disabled = false;
+  scheduleNextPrompt(true);
 }
 
 function animateCorrect() {
@@ -433,7 +486,7 @@ function startPushToTalk(event) {
   if (event) {
     event.preventDefault();
   }
-  if (!state.toolActive || !state.acceptingSpeech || !state.speechEnabled || !state.recognition || state.listening) {
+  if (!state.toolActive || state.correctionRequired || !state.acceptingSpeech || !state.speechEnabled || !state.recognition || state.listening) {
     return;
   }
   try {
@@ -564,6 +617,11 @@ window.addEventListener("keyup", (event) => {
 });
 
 elements.skipButton.addEventListener("click", () => {
+  if (state.correctionRequired) {
+    elements.typedAnswer.focus({ preventScroll: true });
+    elements.typedAnswer.select();
+    return;
+  }
   state.streak = 0;
   pickPrompt();
 });
